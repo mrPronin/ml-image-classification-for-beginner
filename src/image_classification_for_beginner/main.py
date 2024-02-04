@@ -29,7 +29,10 @@ def main():
         ax[i].set_title(label)
         ax[i].imshow(plt.imread(path))
 
-    plt.show()
+    # plt.show()
+
+    # know image shape
+    print(f"Image shape: {plt.imread(df['img'][0]).shape}")
 
 
 if __name__ == "__main__":
