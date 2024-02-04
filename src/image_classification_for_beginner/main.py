@@ -29,6 +29,8 @@ def main():
         ax[i].set_title(label)
         ax[i].imshow(plt.imread(path))
 
+    plt.show()
+
 
 if __name__ == "__main__":
     main()
