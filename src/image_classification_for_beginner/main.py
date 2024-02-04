@@ -1,6 +1,8 @@
-import pandas as pd
 import os
+import pandas as pd
 import matplotlib.pyplot as plt
+import cv2
+from sklearn.model_selection import train_test_split
 
 
 def main():
@@ -33,6 +35,33 @@ def main():
 
     # know image shape
     print(f"Image shape: {plt.imread(df['img'][0]).shape}")
+
+    # Create a dataframe for mapping label
+    df_labels = {
+        'Arborio': 0,
+        'Basmati': 1,
+        'Ipsala': 2,
+        'Jasmine': 3,
+        'Karacadag': 4
+    }
+    # Encode
+    df['encode_label'] = df['label'].map(df_labels)
+    print(df.head())
+
+    # Prepare a model training dataset
+    X = []
+    for img in df['img'][:1]:
+        img = cv2.imread(str(img))
+        # img = augment_function(img)
+        img = cv2.resize(img, (96, 96))
+        img = img/255
+        X.append(img)
+
+    y = df['encode_label']
+
+    # Train/Validation/Test split
+    X_train, X_test_val, y_train, y_test_val = train_test_split(X, y)
+    X_test, X_val, y_test, y_val = train_test_split(X_test_val, y_test_val)
 
 
 if __name__ == "__main__":
