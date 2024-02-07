@@ -3,6 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import cv2
 from sklearn.model_selection import train_test_split
+from keras.applications.vgg16 import VGG16
 
 
 def main():
@@ -50,7 +51,7 @@ def main():
 
     # Prepare a model training dataset
     X = []
-    for img in df['img'][:1]:
+    for img in df['img']:
         img = cv2.imread(str(img))
         # img = augment_function(img)
         img = cv2.resize(img, (96, 96))
@@ -62,6 +63,12 @@ def main():
     # Train/Validation/Test split
     X_train, X_test_val, y_train, y_test_val = train_test_split(X, y)
     X_test, X_val, y_test, y_val = train_test_split(X_test_val, y_test_val)
+
+    # Use VGG16 as a base model
+    base_model = VGG16(input_shape=(96, 96, 3), include_top=False,
+                       weights='imagenet')
+
+    print(base_model.summary())
 
 
 if __name__ == "__main__":
