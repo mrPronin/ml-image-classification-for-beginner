@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 import cv2
 from sklearn.model_selection import train_test_split
 from keras.applications.vgg16 import VGG16
+from keras.models import Sequential
+from keras.layers import Input, Flatten, Dropout, Dense
 
 
 def main():
@@ -68,13 +70,28 @@ def main():
     base_model = VGG16(input_shape=(96, 96, 3), include_top=False,
                        weights='imagenet')
 
+    print("Base model summary:")
     print(base_model.summary())
 
+    # freeze the VGG16 model parameters
     for layer in base_model.layers:
         layer.trainable = False
     base_model.layers[-2].trainable = True
     base_model.layers[-3].trainable = True
     base_model.layers[-4].trainable = True
+
+    # add layers to the model
+    model = Sequential()
+    model.add(Input(shape=(96, 96, 3)))
+    model.add(base_model)
+    model.add(Flatten())
+    model.add(Dropout(0.2))
+    model.add(Dense(256, activation='relu'))
+    model.add(Dropout(0.2))
+    model.add(Dense(len(rice_label), activation='softmax'))
+
+    print("Model summary:")
+    print(model.summary())
 
 
 if __name__ == "__main__":
