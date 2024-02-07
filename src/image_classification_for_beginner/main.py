@@ -70,6 +70,12 @@ def main():
 
     print(base_model.summary())
 
+    for layer in base_model.layers:
+        layer.trainable = False
+    base_model.layers[-2].trainable = True
+    base_model.layers[-3].trainable = True
+    base_model.layers[-4].trainable = True
+
 
 if __name__ == "__main__":
     main()
