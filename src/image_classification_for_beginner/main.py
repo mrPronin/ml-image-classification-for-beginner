@@ -14,6 +14,7 @@ def main():
     img_path = "data/Rice_Image_Dataset/"
 
     rice_label = ['Arborio', 'Basmati', 'Ipsala', 'Jasmine', 'Karacadag']
+
     # create a dataframe of image path and label
     img_list = []
     label_list = []
@@ -27,14 +28,13 @@ def main():
     print(df['label'].value_counts())
 
     # show sample images
-    fig, ax = plt.subplots(ncols=len(rice_label), figsize=(20, 4))
-    fig.suptitle('Rice Category')
-    random_num = 12
-    for i, label in enumerate(rice_label):
-        path = df[df['label'] == label]['img'].iloc[random_num]
-        # print(f"i: {i} label: {label} path: {path}")
-        ax[i].set_title(label)
-        ax[i].imshow(plt.imread(path))
+    # fig, ax = plt.subplots(ncols=len(rice_label), figsize=(20, 4))
+    # fig.suptitle('Rice Category')
+    # random_num = 12
+    # for i, label in enumerate(rice_label):
+    #     path = df[df['label'] == label]['img'].iloc[random_num]
+    #     ax[i].set_title(label)
+    #     ax[i].imshow(plt.imread(path))
 
     # plt.show()
 
@@ -68,30 +68,25 @@ def main():
     X = np.array(X)
     y = np.array(y)
 
-    # Ensure X is reshaped into (n_samples, height, width, channels)
-    # This step is crucial if your images have not been reshaped yet.
-    # In your case, it seems like each image is already resized to (96, 96)
-    #  and has 3 channels.
-    # So, this step may already be done. Just ensure X's shape is correct.
-
     # Train/Validation/Test split
-    # X_train, X_test_val, y_train, y_test_val = train_test_split(X, y)
-    
-    # Adjust test_size as needed
+
+    # Split into training (80%) and temporary test (20%)
     X_train, X_test_val, y_train, y_test_val = train_test_split(X, y,
                                                                 test_size=0.2)
 
-    # Further split for test and validation
+    # Split the temporary test set into validation (50% of X_temp)
+    # and test (50% of X_temp)
+    # This means we're effectively splitting the original dataset into
+    # 80% train, 10% validation, and 10% test
     X_test, X_val, y_test, y_val = train_test_split(X_test_val, y_test_val,
                                                     test_size=0.5)
-    # X_test, X_val, y_test, y_val = train_test_split(X_test_val, y_test_val)
 
     # Use VGG16 as a base model
     base_model = VGG16(input_shape=(96, 96, 3), include_top=False,
                        weights='imagenet')
 
     print("Base model summary:")
-    print(base_model.summary())
+    base_model.summary()
 
     # freeze the VGG16 model parameters
     for layer in base_model.layers:
@@ -111,7 +106,7 @@ def main():
     model.add(Dense(len(rice_label), activation='softmax'))
 
     print("Model summary:")
-    print(model.summary())
+    model.summary()
 
     # train a model
     model.compile(optimizer="adam", loss='sparse_categorical_crossentropy',
@@ -119,13 +114,11 @@ def main():
     history = model.fit(X_train, y_train, epochs=5,
                         validation_data=(X_val, y_val))
 
-    print(history)
-
     # model evaluation
     model.evaluate(X_test, y_test)
 
     # store trained model
-    model_filename = './trained-model.h5'
+    model_filename = './data/trained-model.keras'
     model.save(model_filename)
 
     # load model
