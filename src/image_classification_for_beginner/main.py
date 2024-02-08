@@ -10,109 +10,143 @@ import numpy as np
 # import tensorflow
 
 
-def main():
-    img_path = "data/Rice_Image_Dataset/"
-
-    rice_label = ['Arborio', 'Basmati', 'Ipsala', 'Jasmine', 'Karacadag']
-
+def load_and_prepare_data(data_set_path, rice_labels):
     # create a dataframe of image path and label
-    img_list = []
-    label_list = []
-    for label in rice_label:
-        for img_file in os.listdir(img_path+label):
-            img_list.append(img_path+label+'/'+img_file)
+    img_list, label_list = [], []
+    for label in rice_labels:
+        label_path = os.path.join(data_set_path, label)
+        for img_file in os.listdir(label_path):
+            img_list.append(os.path.join(label_path, img_file))
             label_list.append(label)
-    df = pd.DataFrame({'img': img_list, 'label': label_list})
+    return pd.DataFrame({'img': img_list, 'label': label_list})
 
-    # count the number of images of each rice category
-    print(df['label'].value_counts())
 
-    # show sample images
-    # fig, ax = plt.subplots(ncols=len(rice_label), figsize=(20, 4))
-    # fig.suptitle('Rice Category')
-    # random_num = 12
-    # for i, label in enumerate(rice_label):
-    #     path = df[df['label'] == label]['img'].iloc[random_num]
-    #     ax[i].set_title(label)
-    #     ax[i].imshow(plt.imread(path))
+def show_sample_images(df, rice_labels):
+    fig, ax = plt.subplots(ncols=len(rice_labels), figsize=(20, 4))
+    fig.suptitle('Rice Category')
+    random_num = 12
+    for i, label in enumerate(rice_labels):
+        path = df[df['label'] == label]['img'].iloc[random_num]
+        ax[i].set_title(label)
+        ax[i].imshow(plt.imread(path))
+    plt.show()
 
-    # plt.show()
 
-    # know image shape
-    print(f"Image shape: {plt.imread(df['img'][0]).shape}")
+def encode_labels(df, label_mapping):
+    df['encode_label'] = df['label'].map(label_mapping)
+    return df
 
-    # Create a dataframe for mapping label
-    df_labels = {
-        'Arborio': 0,
-        'Basmati': 1,
-        'Ipsala': 2,
-        'Jasmine': 3,
-        'Karacadag': 4
-    }
-    # Encode
-    df['encode_label'] = df['label'].map(df_labels)
-    print(df.head())
 
+def prepare_images(df, image_size=(96, 96)):
     # Prepare a model training dataset
-    X = []
-    for img in df['img']:
-        img = cv2.imread(str(img))
-        # img = augment_function(img)
-        img = cv2.resize(img, (96, 96))
-        img = img/255
+    X, y = [], np.array(df['encode_label'])
+    for img_path in df['img']:
+        img = cv2.imread(img_path)
+        img = cv2.resize(img, image_size)
+        img = img / 255.0
         X.append(img)
+    return np.array(X), y
 
-    y = df['encode_label']
 
-    # Convert X and y into numpy arrays
-    X = np.array(X)
-    y = np.array(y)
-
-    # Train/Validation/Test split
-
+def split_data(X, y):
     # Split into training (80%) and temporary test (20%)
     X_train, X_test_val, y_train, y_test_val = train_test_split(X, y,
                                                                 test_size=0.2)
-
     # Split the temporary test set into validation (50% of X_temp)
     # and test (50% of X_temp)
     # This means we're effectively splitting the original dataset into
     # 80% train, 10% validation, and 10% test
     X_test, X_val, y_test, y_val = train_test_split(X_test_val, y_test_val,
                                                     test_size=0.5)
+    return X_train, X_test, X_val, y_train, y_test, y_val
 
+
+def prepare_model(input_shape, num_classes):
     # Use VGG16 as a base model
-    base_model = VGG16(input_shape=(96, 96, 3), include_top=False,
-                       weights='imagenet')
+    base_model = VGG16(
+        input_shape=input_shape,
+        include_top=False, weights='imagenet'
+    )
 
     print("Base model summary:")
     base_model.summary()
 
-    # freeze the VGG16 model parameters
-    for layer in base_model.layers:
+    # Freeze all except last three
+    for layer in base_model.layers[:-3]:
         layer.trainable = False
-    base_model.layers[-2].trainable = True
-    base_model.layers[-3].trainable = True
-    base_model.layers[-4].trainable = True
-
-    # add layers to the model
-    model = Sequential()
-    model.add(Input(shape=(96, 96, 3)))
-    model.add(base_model)
-    model.add(Flatten())
-    model.add(Dropout(0.2))
-    model.add(Dense(256, activation='relu'))
-    model.add(Dropout(0.2))
-    model.add(Dense(len(rice_label), activation='softmax'))
+    
+    model = Sequential([
+        Input(shape=input_shape),
+        base_model,
+        Flatten(),
+        Dropout(0.2),
+        Dense(256, activation='relu'),
+        Dropout(0.2),
+        Dense(num_classes, activation='softmax')
+    ])
 
     print("Model summary:")
     model.summary()
 
-    # train a model
+    return model
+
+
+def train_model(model):
     model.compile(optimizer="adam", loss='sparse_categorical_crossentropy',
                   metrics=['acc'])
-    history = model.fit(X_train, y_train, epochs=5,
-                        validation_data=(X_val, y_val))
+    return model
+
+
+def plot_metrics(history):
+    # Plot accuracy
+    plt.plot(history.history['acc'], marker='o')
+    plt.plot(history.history['val_acc'], marker='o')
+    plt.title('Model Accuracy')
+    plt.ylabel('Accuracy')
+    plt.xlabel('Epoch')
+    plt.legend(['Train', 'Validation'], loc='lower right')
+    plt.show()
+
+    # Plot loss
+    plt.plot(history.history['loss'], marker='o')
+    plt.plot(history.history['val_loss'], marker='o')
+    plt.title('Model Loss')
+    plt.ylabel('Loss')
+    plt.xlabel('Epoch')
+    plt.legend(['Train', 'Validation'], loc='upper right')
+    plt.show()
+
+
+def main():
+    data_set_path = "data/Rice_Image_Dataset/"
+    rice_labels = ['Arborio', 'Basmati', 'Ipsala', 'Jasmine', 'Karacadag']
+    df = load_and_prepare_data(data_set_path, rice_labels)
+
+    # count the number of images of each rice category
+    print(df['label'].value_counts())
+
+    show_sample_images(df, rice_labels)
+
+    # know image shape
+    print(f"Image shape: {plt.imread(df['img'][0]).shape}")
+
+    # Create a dataframe for mapping label
+    label_mapping = {label: idx for idx, label in enumerate(rice_labels)}
+    df = encode_labels(df, label_mapping)
+    print(df.head())
+
+    X, y = prepare_images(df)
+    X_train, X_test, X_val, y_train, y_test, y_val = split_data(X, y)
+
+    model = prepare_model((96, 96, 3), len(rice_labels))
+    model = train_model(model)
+
+    history = model.fit(
+        X_train,
+        y_train,
+        epochs=5,
+        validation_data=(X_val, y_val)
+    )
 
     # model evaluation
     model.evaluate(X_test, y_test)
@@ -125,24 +159,7 @@ def main():
     # tensorflow.keras.models.load_model(model_filename)
 
     # visualize the model
-
-    # Plot accuracy of each epoch
-    plt.plot(history.history['acc'], marker='o')
-    plt.plot(history.history['val_acc'], marker='o')
-    plt.title('model accuracy')
-    plt.ylabel('accuracy')
-    plt.xlabel('epoch')
-    plt.legend(['train', 'val'], loc='lower right')
-    plt.show()
-
-    # Plot loss of each epoch
-    plt.plot(history.history['loss'], marker='o')
-    plt.plot(history.history['val_loss'], marker='o')
-    plt.title('model loss')
-    plt.ylabel('loss')
-    plt.xlabel('epoch')
-    plt.legend(['train', 'val'], loc='upper right')
-    plt.show()
+    plot_metrics(history)
 
 
 if __name__ == "__main__":
