@@ -7,6 +7,7 @@ from keras.applications.vgg16 import VGG16
 from keras.models import Sequential
 from keras.layers import Input, Flatten, Dropout, Dense
 import numpy as np
+
 # import tensorflow
 
 
@@ -18,29 +19,29 @@ def load_and_prepare_data(data_set_path, rice_labels):
         for img_file in os.listdir(label_path):
             img_list.append(os.path.join(label_path, img_file))
             label_list.append(label)
-    return pd.DataFrame({'img': img_list, 'label': label_list})
+    return pd.DataFrame({"img": img_list, "label": label_list})
 
 
 def show_sample_images(df, rice_labels):
     fig, ax = plt.subplots(ncols=len(rice_labels), figsize=(20, 4))
-    fig.suptitle('Rice Category')
+    fig.suptitle("Rice Category")
     random_num = 12
     for i, label in enumerate(rice_labels):
-        path = df[df['label'] == label]['img'].iloc[random_num]
+        path = df[df["label"] == label]["img"].iloc[random_num]
         ax[i].set_title(label)
         ax[i].imshow(plt.imread(path))
     plt.show()
 
 
 def encode_labels(df, label_mapping):
-    df['encode_label'] = df['label'].map(label_mapping)
+    df["encode_label"] = df["label"].map(label_mapping)
     return df
 
 
 def prepare_images(df, image_size=(96, 96)):
     # Prepare a model training dataset
-    X, y = [], np.array(df['encode_label'])
-    for img_path in df['img']:
+    X, y = [], np.array(df["encode_label"])
+    for img_path in df["img"]:
         img = cv2.imread(img_path)
         img = cv2.resize(img, image_size)
         img = img / 255.0
@@ -50,14 +51,18 @@ def prepare_images(df, image_size=(96, 96)):
 
 def split_data(X, y):
     # Split into training (80%) and temporary test (20%)
-    X_train, X_test_val, y_train, y_test_val = train_test_split(X, y,
-                                                                test_size=0.2)
+    X_train, X_test_val, y_train, y_test_val = train_test_split(
+        X,
+        y,
+        test_size=0.2
+    )
     # Split the temporary test set into validation (50% of X_temp)
     # and test (50% of X_temp)
     # This means we're effectively splitting the original dataset into
     # 80% train, 10% validation, and 10% test
-    X_test, X_val, y_test, y_val = train_test_split(X_test_val, y_test_val,
-                                                    test_size=0.5)
+    X_test, X_val, y_test, y_val = train_test_split(
+        X_test_val, y_test_val, test_size=0.5
+    )
     return X_train, X_test, X_val, y_train, y_test, y_val
 
 
@@ -65,7 +70,8 @@ def prepare_model(input_shape, num_classes):
     # Use VGG16 as a base model
     base_model = VGG16(
         input_shape=input_shape,
-        include_top=False, weights='imagenet'
+        include_top=False,
+        weights="imagenet"
     )
 
     print("Base model summary:")
@@ -74,16 +80,18 @@ def prepare_model(input_shape, num_classes):
     # Freeze all except last three
     for layer in base_model.layers[:-3]:
         layer.trainable = False
-    
-    model = Sequential([
-        Input(shape=input_shape),
-        base_model,
-        Flatten(),
-        Dropout(0.2),
-        Dense(256, activation='relu'),
-        Dropout(0.2),
-        Dense(num_classes, activation='softmax')
-    ])
+
+    model = Sequential(
+        [
+            Input(shape=input_shape),
+            base_model,
+            Flatten(),
+            Dropout(0.2),
+            Dense(256, activation="relu"),
+            Dropout(0.2),
+            Dense(num_classes, activation="softmax"),
+        ]
+    )
 
     print("Model summary:")
     model.summary()
@@ -92,38 +100,41 @@ def prepare_model(input_shape, num_classes):
 
 
 def train_model(model):
-    model.compile(optimizer="adam", loss='sparse_categorical_crossentropy',
-                  metrics=['acc'])
+    model.compile(
+        optimizer="adam",
+        loss="sparse_categorical_crossentropy",
+        metrics=["acc"]
+    )
     return model
 
 
 def plot_metrics(history):
     # Plot accuracy
-    plt.plot(history.history['acc'], marker='o')
-    plt.plot(history.history['val_acc'], marker='o')
-    plt.title('Model Accuracy')
-    plt.ylabel('Accuracy')
-    plt.xlabel('Epoch')
-    plt.legend(['Train', 'Validation'], loc='lower right')
+    plt.plot(history.history["acc"], marker="o")
+    plt.plot(history.history["val_acc"], marker="o")
+    plt.title("Model Accuracy")
+    plt.ylabel("Accuracy")
+    plt.xlabel("Epoch")
+    plt.legend(["Train", "Validation"], loc="lower right")
     plt.show()
 
     # Plot loss
-    plt.plot(history.history['loss'], marker='o')
-    plt.plot(history.history['val_loss'], marker='o')
-    plt.title('Model Loss')
-    plt.ylabel('Loss')
-    plt.xlabel('Epoch')
-    plt.legend(['Train', 'Validation'], loc='upper right')
+    plt.plot(history.history["loss"], marker="o")
+    plt.plot(history.history["val_loss"], marker="o")
+    plt.title("Model Loss")
+    plt.ylabel("Loss")
+    plt.xlabel("Epoch")
+    plt.legend(["Train", "Validation"], loc="upper right")
     plt.show()
 
 
 def main():
     data_set_path = "data/Rice_Image_Dataset/"
-    rice_labels = ['Arborio', 'Basmati', 'Ipsala', 'Jasmine', 'Karacadag']
+    rice_labels = ["Arborio", "Basmati", "Ipsala", "Jasmine", "Karacadag"]
     df = load_and_prepare_data(data_set_path, rice_labels)
 
     # count the number of images of each rice category
-    print(df['label'].value_counts())
+    print(df["label"].value_counts())
 
     show_sample_images(df, rice_labels)
 
@@ -152,7 +163,7 @@ def main():
     model.evaluate(X_test, y_test)
 
     # store trained model
-    model_filename = './data/trained-model.keras'
+    model_filename = "./data/trained-model.keras"
     model.save(model_filename)
 
     # load model
