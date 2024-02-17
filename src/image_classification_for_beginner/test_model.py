@@ -49,7 +49,8 @@ def main():
         if os.path.isdir(os.path.join(data_set_path, d))
     ]
 
-    img_path = "data/dogs-cats/Dog/1275.jpg"
+    # img_path = "data/dogs-cats/Dog/1275.jpg"
+    img_path = "data/dogs-cats/Cat/1584.jpg"
     predict_image(model, img_path, labels)
     # print(predicted_label)
 

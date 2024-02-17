@@ -75,10 +75,13 @@ def prepare_images(df, image_size=(96, 96)):
     # Prepare a model training dataset
     X, y = [], np.array(df["encode_label"])
     for img_path in df["img"]:
-        img = cv2.imread(img_path)
-        img = cv2.resize(img, image_size)
-        img = img / 255.0
-        X.append(img)
+        try:
+            img = cv2.imread(img_path)
+            img = cv2.resize(img, image_size)
+            img = img / 255.0
+            X.append(img)
+        except Exception:
+            print(img_path)
     return np.array(X), y
 
 
