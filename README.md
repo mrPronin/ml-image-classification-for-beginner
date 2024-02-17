@@ -25,7 +25,12 @@ conda activate cv-workshop-01-3_11
 
 5. Create `data` subfolder in the project folder. Download the data set - [Rice Image Dataset](https://www.kaggle.com/datasets/muratkokludataset/rice-image-dataset/data) and place it in the `data` folder.
 
-6. Run Python code
+6. Train the model
 ```python
 python ./src/image_classification_for_beginner/main.py
+```
+
+7. Test the model with selected image
+```python
+python ./src/image_classification_for_beginner/test_model.py
 ```
