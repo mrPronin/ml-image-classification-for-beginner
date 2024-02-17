@@ -8,15 +8,13 @@ from keras.models import Sequential
 from keras.layers import Input, Flatten, Dropout, Dense
 import numpy as np
 from PIL import Image
-
-# import tensorflow
-
-max_images_per_label = 500
-data_set_folder = "dogs-cats"
-# data_set_folder = "rice-image-dataset"
-data_set_path = f"data/{data_set_folder}/"
-# image_size = (160, 160)
-image_size = (96, 96)
+from constants import (
+    max_images_per_label,
+    data_set_folder,
+    data_set_path,
+    image_size
+)
+from utils import encode_labels, map_labels
 
 
 def check_images(data_set_path, max_images_per_label=None):
@@ -71,11 +69,6 @@ def show_sample_images(df, labels):
         ax[i].set_title(label)
         ax[i].imshow(plt.imread(path))
     plt.show()
-
-
-def encode_labels(df, label_mapping):
-    df["encode_label"] = df["label"].map(label_mapping)
-    return df
 
 
 def prepare_images(df, image_size=(96, 96)):
@@ -186,7 +179,7 @@ def main():
     print(f"Image shape: {plt.imread(df['img'][0]).shape}")
 
     # Create a dataframe for mapping label
-    label_mapping = {label: idx for idx, label in enumerate(labels)}
+    label_mapping = map_labels(labels)
     df = encode_labels(df, label_mapping)
     print(df.head())
 
