@@ -11,22 +11,32 @@ import numpy as np
 # import tensorflow
 
 
-def load_and_prepare_data(data_set_path, rice_labels):
+def load_and_prepare_data(data_set_path, max_images_per_label=None):
+    # Dynamically list directories in the dataset path
+    labels = [
+        d
+        for d in os.listdir(data_set_path)
+        if os.path.isdir(os.path.join(data_set_path, d))
+    ]
+
     # create a dataframe of image path and label
     img_list, label_list = [], []
-    for label in rice_labels:
+    for label in labels:
         label_path = os.path.join(data_set_path, label)
-        for img_file in os.listdir(label_path):
+        files = os.listdir(label_path)
+        if max_images_per_label:
+            files = files[:max_images_per_label]
+        for img_file in files:
             img_list.append(os.path.join(label_path, img_file))
             label_list.append(label)
-    return pd.DataFrame({"img": img_list, "label": label_list})
+    return pd.DataFrame({"img": img_list, "label": label_list}), labels
 
 
-def show_sample_images(df, rice_labels):
-    fig, ax = plt.subplots(ncols=len(rice_labels), figsize=(20, 4))
-    fig.suptitle("Rice Category")
+def show_sample_images(df, labels):
+    fig, ax = plt.subplots(ncols=len(labels), figsize=(20, 4))
+    fig.suptitle("Category")
     random_num = 12
-    for i, label in enumerate(rice_labels):
+    for i, label in enumerate(labels):
         path = df[df["label"] == label]["img"].iloc[random_num]
         ax[i].set_title(label)
         ax[i].imshow(plt.imread(path))
@@ -129,27 +139,26 @@ def plot_metrics(history):
 
 
 def main():
-    data_set_path = "data/Rice_Image_Dataset/"
-    rice_labels = ["Arborio", "Basmati", "Ipsala", "Jasmine", "Karacadag"]
-    df = load_and_prepare_data(data_set_path, rice_labels)
+    data_set_path = "data/rice-image-dataset/"
+    df, labels = load_and_prepare_data(data_set_path, max_images_per_label=100)
 
-    # count the number of images of each rice category
+    # count the number of images of each category
     print(df["label"].value_counts())
 
-    show_sample_images(df, rice_labels)
+    show_sample_images(df, labels)
 
     # know image shape
     print(f"Image shape: {plt.imread(df['img'][0]).shape}")
 
     # Create a dataframe for mapping label
-    label_mapping = {label: idx for idx, label in enumerate(rice_labels)}
+    label_mapping = {label: idx for idx, label in enumerate(labels)}
     df = encode_labels(df, label_mapping)
     print(df.head())
 
     X, y = prepare_images(df)
     X_train, X_test, X_val, y_train, y_test, y_val = split_data(X, y)
 
-    model = prepare_model((96, 96, 3), len(rice_labels))
+    model = prepare_model((96, 96, 3), len(labels))
     model = train_model(model)
 
     history = model.fit(
