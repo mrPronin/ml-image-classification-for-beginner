@@ -12,8 +12,11 @@ from PIL import Image
 # import tensorflow
 
 max_images_per_label = 500
-# data_set_path = "data/rice-image-dataset/"
-data_set_path = "data/dogs-cats/"
+data_set_folder = "dogs-cats"
+# data_set_folder = "rice-image-dataset"
+data_set_path = f"data/{data_set_folder}/"
+# image_size = (160, 160)
+image_size = (96, 96)
 
 
 def check_images(data_set_path, max_images_per_label=None):
@@ -187,10 +190,10 @@ def main():
     df = encode_labels(df, label_mapping)
     print(df.head())
 
-    X, y = prepare_images(df)
+    X, y = prepare_images(df, image_size)
     X_train, X_test, X_val, y_train, y_test, y_val = split_data(X, y)
 
-    model = prepare_model((96, 96, 3), len(labels))
+    model = prepare_model((*image_size, 3), len(labels))
     model = train_model(model)
 
     history = model.fit(
@@ -204,7 +207,7 @@ def main():
     model.evaluate(X_test, y_test)
 
     # store trained model
-    model_filename = "./data/trained-model.keras"
+    model_filename = f"./data/trained-model-{data_set_folder}.keras"
     model.save(model_filename)
 
     # load model
