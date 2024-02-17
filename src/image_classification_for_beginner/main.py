@@ -7,8 +7,35 @@ from keras.applications.vgg16 import VGG16
 from keras.models import Sequential
 from keras.layers import Input, Flatten, Dropout, Dense
 import numpy as np
+from PIL import Image
 
 # import tensorflow
+
+max_images_per_label = 500
+# data_set_path = "data/rice-image-dataset/"
+data_set_path = "data/dogs-cats/"
+
+
+def check_images(data_set_path, max_images_per_label=None):
+    # Dynamically list directories in the dataset path
+    labels = [
+        d
+        for d in os.listdir(data_set_path)
+        if os.path.isdir(os.path.join(data_set_path, d))
+    ]
+    for label in labels:
+        label_path = os.path.join(data_set_path, label)
+        files = os.listdir(label_path)
+        if max_images_per_label:
+            files = files[:max_images_per_label]
+        for img_file in files:
+            img_path = os.path.join(label_path, img_file)
+            try:
+                # print(f"File name: {img_file}")
+                Image.open(img_path)
+            except:  # noqa: E722
+                # os.remove(img_path)
+                print(img_path)
 
 
 def load_and_prepare_data(data_set_path, max_images_per_label=None):
@@ -139,8 +166,13 @@ def plot_metrics(history):
 
 
 def main():
-    data_set_path = "data/rice-image-dataset/"
-    df, labels = load_and_prepare_data(data_set_path, max_images_per_label=100)
+    check_images(
+        data_set_path,
+        max_images_per_label=max_images_per_label
+    )
+    df, labels = load_and_prepare_data(
+        data_set_path, max_images_per_label=max_images_per_label
+    )
 
     # count the number of images of each category
     print(df["label"].value_counts())
